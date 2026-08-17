@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
         }
 
@@ -46,7 +47,8 @@
             font-weight: bold;
         }
 
-        input, textarea {
+        input,
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -81,7 +83,7 @@
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
 
@@ -106,10 +108,22 @@
             background: #f44336;
             padding: 5px 10px;
             font-size: 14px;
+            margin-left: 10px;
         }
 
         .delete-btn:hover {
             background: #da190b;
+        }
+
+        .comment-btn {
+            background: #2196F3;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .comment-btn:hover {
+            background: #0b7dda;
         }
 
         .message {
@@ -129,8 +143,105 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
+        /* 分页控件样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination button {
+            background: #007bff;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 评论弹窗样式 */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .comment-form {
+            margin-top: 20px;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            min-height: 60px;
+        }
+
+        .comment-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-content {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .comment-time {
+            color: #999;
+            font-size: 12px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>📝 我的博客</h1>
@@ -153,24 +264,58 @@
         <div class="articles">
             <h2>文章列表</h2>
             <div id="articleList"></div>
+
+            <!-- 分页控件 -->
+            <div class="pagination">
+                <button id="prevBtn" onclick="prevPage()">上一页</button>
+                <span class="pagination-info">
+                    第 <span id="currentPage">1</span> 页 / 共 <span id="totalPages">1</span> 页
+                    （共 <span id="totalCount">0</span> 篇文章）
+                </span>
+                <button id="nextBtn" onclick="nextPage()">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 评论弹窗 -->
+    <div id="commentsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeComments()">&times;</span>
+            <h2>评论列表</h2>
+            <div id="commentsList"></div>
+
+            <div class="comment-form">
+                <textarea id="commentContent" placeholder="发表你的评论..."></textarea>
+                <button onclick="submitComment()">发表评论</button>
+            </div>
         </div>
     </div>
 
     <script>
         const API_URL = 'http://localhost:8082/api/articles';
+        const COMMENT_API_URL = 'http://localhost:8082/api/comments';
+
+        // 分页状态
+        let currentPageNum = 1;
+        let pageSize = 10;
+        let totalPages = 1;
+
+        // 当前查看评论的文章 ID
+        let currentArticleId = null;
 
         // 页面加载时获取文章列表
-        window.onload = function() {
+        window.onload = function () {
             loadArticles();
         };
 
-        // 获取文章列表
+        // 获取文章列表（分页）
         function loadArticles() {
-            fetch(API_URL)
+            fetch(`${API_URL}/page?pageNum=${currentPageNum}&pageSize=${pageSize}`)
                 .then(response => response.json())
                 .then(result => {
                     if (result.code === 200) {
-                        displayArticles(result.data);
+                        displayArticles(result.data.list);
+                        updatePagination(result.data);
                     } else {
                         showMessage('加载失败：' + result.message, 'error');
                     }
@@ -196,9 +341,117 @@
                     <div class="article-meta">
                         发布时间：${new Date(article.createdAt).toLocaleString('zh-CN')}
                         <button class="delete-btn" onclick="deleteArticle(${article.id})">删除</button>
+                        <button class="comment-btn" onclick="showComments(${article.id})">查看评论</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        // 更新分页信息
+        function updatePagination(pageData) {
+            totalPages = pageData.pages;
+
+            document.getElementById('currentPage').textContent = pageData.pageNum;
+            document.getElementById('totalPages').textContent = pageData.pages;
+            document.getElementById('totalCount').textContent = pageData.total;
+
+            // 控制按钮状态
+            document.getElementById('prevBtn').disabled = (pageData.pageNum <= 1);
+            document.getElementById('nextBtn').disabled = (pageData.pageNum >= pageData.pages);
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPageNum > 1) {
+                currentPageNum--;
+                loadArticles();
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            if (currentPageNum < totalPages) {
+                currentPageNum++;
+                loadArticles();
+            }
+        }
+
+        // 显示评论
+        function showComments(articleId) {
+            currentArticleId = articleId;
+            document.getElementById('commentsModal').style.display = 'block';
+
+            fetch(`${COMMENT_API_URL}/article/${articleId}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 200) {
+                        displayComments(result.data);
+                    } else {
+                        showMessage('加载评论失败：' + result.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('网络错误：' + error, 'error');
+                });
+        }
+
+        // 关闭评论弹窗
+        function closeComments() {
+            document.getElementById('commentsModal').style.display = 'none';
+            document.getElementById('commentContent').value = '';
+        }
+
+        // 显示评论列表
+        function displayComments(comments) {
+            const listDiv = document.getElementById('commentsList');
+
+            if (comments.length === 0) {
+                listDiv.innerHTML = '<p style="color: #999;">暂无评论</p>';
+                return;
+            }
+
+            listDiv.innerHTML = comments.map(comment => `
+                <div class="comment-item">
+                    <div class="comment-content">${comment.content}</div>
+                    <div class="comment-time">${new Date(comment.createdAt).toLocaleString('zh-CN')}</div>
+                </div>
+            `).join('');
+        }
+
+        // 发表评论
+        function submitComment() {
+            const content = document.getElementById('commentContent').value;
+
+            if (!content) {
+                showMessage('请填写评论内容', 'error');
+                return;
+            }
+
+            fetch(COMMENT_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content: content,
+                    articleId: currentArticleId,
+                    userId: 1
+                })
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 200) {
+                        showMessage('评论发布成功！', 'success');
+                        document.getElementById('commentContent').value = '';
+                        // 重新加载评论
+                        showComments(currentArticleId);
+                    } else {
+                        showMessage('评论发布失败：' + result.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('网络错误：' + error, 'error');
+                });
         }
 
         // 发布文章
@@ -222,20 +475,22 @@
                     authorId: 1
                 })
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.code === 200) {
-                    showMessage('发布成功！', 'success');
-                    document.getElementById('title').value = '';
-                    document.getElementById('content').value = '';
-                    loadArticles();
-                } else {
-                    showMessage('发布失败：' + result.message, 'error');
-                }
-            })
-            .catch(error => {
-                showMessage('网络错误：' + error, 'error');
-            });
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 200) {
+                        showMessage('发布成功！', 'success');
+                        document.getElementById('title').value = '';
+                        document.getElementById('content').value = '';
+                        // 回到第一页并刷新
+                        currentPageNum = 1;
+                        loadArticles();
+                    } else {
+                        showMessage('发布失败：' + result.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('网络错误：' + error, 'error');
+                });
         }
 
         // 删除文章
@@ -247,18 +502,18 @@
             fetch(`${API_URL}/${id}`, {
                 method: 'DELETE'
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.code === 200) {
-                    showMessage('删除成功！', 'success');
-                    loadArticles();
-                } else {
-                    showMessage('删除失败：' + result.message, 'error');
-                }
-            })
-            .catch(error => {
-                showMessage('网络错误：' + error, 'error');
-            });
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 200) {
+                        showMessage('删除成功！', 'success');
+                        loadArticles();
+                    } else {
+                        showMessage('删除失败：' + result.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('网络错误：' + error, 'error');
+                });
         }
 
         // 显示消息
@@ -274,4 +529,5 @@
         }
     </script>
 </body>
+
 </html>

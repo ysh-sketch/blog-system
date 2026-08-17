@@ -24,6 +24,7 @@
               // 公开接口：不需要登录
               .antMatchers("/api/articles/**").permitAll()
               .antMatchers("/api/auth/**").permitAll()
+              .antMatchers("/api/comments/**").permitAll()
               // 静态资源：不需要登录
               .antMatchers("/", "/index.html").permitAll()
               .antMatchers("/css/**", "/js/**").permitAll()

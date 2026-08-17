@@ -21,6 +21,14 @@ public class ArticleController {
         return articleService.getAllArticles();
     }
 
+    // 分页查询文章列表
+    @GetMapping("/page")
+    public Result<Map<String, Object>> getArticlesByPage(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return articleService.getArticlesByPage(pageNum, pageSize);
+    }
+
     // 查看文章详情
     @GetMapping("/{id}")
     public Result<Article> getArticleById(@PathVariable Long id) {
