@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/articles")
@@ -48,5 +49,10 @@ public class ArticleController {
     @DeleteMapping("/{id}")
     public Result<String> deleteArticle(@PathVariable Long id) {
         return articleService.deleteArticle(id);
+    }
+
+    @GetMapping("/search")
+    public Result<List<Article>> searchArticles(@RequestParam String keyword) {
+        return articleService.searchArticles(keyword);
     }
 }

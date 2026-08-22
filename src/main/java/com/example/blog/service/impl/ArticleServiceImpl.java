@@ -57,23 +57,31 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-      public Result<String> createArticle(String title, String content, Long authorId)
-  {
-          Article article = new Article();
-          article.setTitle(title);
-          article.setContent(content);
-          article.setAuthorId(authorId);
-          articleMapper.insert(article);
-          return Result.success("文章发布成功，ID：" + article.getId());
-      }
+    public Result<String> createArticle(String title, String content, Long authorId) {
+        Article article = new Article();
+        article.setTitle(title);
+        article.setContent(content);
+        article.setAuthorId(authorId);
+        articleMapper.insert(article);
+        return Result.success("文章发布成功，ID：" + article.getId());
+    }
 
     @Override
-      public Result<String> deleteArticle(Long id) {
-          int rows = articleMapper.deleteById(id);
-          if (rows > 0) {
-              return Result.success("删除成功");
-          } else {
-              return Result.error("删除失败，文章不存在");
-          }
-      }
+    public Result<String> deleteArticle(Long id) {
+        int rows = articleMapper.deleteById(id);
+        if (rows > 0) {
+            return Result.success("删除成功");
+        } else {
+            return Result.error("删除失败，文章不存在");
+        }
+    }
+
+    @Override
+    public Result<List<Article>> searchArticles(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Result.error("搜索关键字不能为空");
+        }
+        List<Article> articles = articleMapper.searchByKeyword(keyword.trim());
+        return Result.success(articles);
+    }
 }

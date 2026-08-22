@@ -9,7 +9,7 @@ import java.util.List;
 public interface ArticleMapper {
 
     @Select("SELECT id, title, content, author_id, created_at, updated_at FROM articles ORDER BY created_at DESC")
-    List<Article>findAll();
+    List<Article> findAll();
 
     @Select("SELECT id, title, content, author_id, created_at, updated_at FROM articles WHERE id=#{id}")
     Article findById(Long id);
@@ -21,4 +21,7 @@ public interface ArticleMapper {
 
     @Delete("DELETE FROM articles WHERE id = #{id}")
     int deleteById(Long id);
+
+    @Select("SELECT id, title, content, author_id, created_at, updated_at FROM articles WHERE title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%') ORDER BY created_at DESC")
+    List<Article> searchByKeyword(String keyword);
 }

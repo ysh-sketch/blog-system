@@ -17,4 +17,6 @@ public interface ArticleService {
     Result<String> createArticle(String title, String content, Long authorId);
 
     Result<String> deleteArticle(Long id);
+
+    Result<List<Article>> searchArticles(String keyword);
 }

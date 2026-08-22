@@ -28,6 +28,39 @@
             margin-bottom: 20px;
         }
 
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .search-box button {
+            background: #2196F3;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .search-box button:hover {
+            background: #0b7dda;
+        }
+
         .article-form {
             background: white;
             padding: 20px;
@@ -323,6 +356,13 @@
 
         <div id="message" class="message" style="display: none;"></div>
 
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <input type="text" id="searchKeyword" placeholder="搜索文章..." onkeypress="handleSearchKeyPress(event)">
+            <button onclick="searchArticles()">搜索</button>
+            <button onclick="loadArticles()" style="background: #6c757d;">显示全部</button>
+        </div>
+
         <div class="article-form">
             <h2>发布新文章</h2>
             <div class="form-group">
@@ -400,6 +440,9 @@
         // 选中的标签
         let selectedTags = [];
 
+        // 是否搜索模式
+        let isSearchMode = false;
+
         // 页面加载时获取文章列表
         window.onload = function () {
             loadArticles();
@@ -418,14 +461,53 @@
                 .catch(error => console.error('加载标签失败：', error));
         }
 
+        // 搜索文章
+        function searchArticles() {
+            const keyword = document.getElementById('searchKeyword').value.trim();
+
+            if (!keyword) {
+                showMessage('请输入搜索关键词', 'error');
+                return;
+            }
+
+            fetch(`${API_URL}/search?keyword=${encodeURIComponent(keyword)}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 200) {
+                        displayArticles(result.data);
+                        isSearchMode = true;
+
+                        // 隐藏分页控件
+                        document.querySelector('.pagination').style.display = 'none';
+                    } else {
+                        showMessage('搜索失败：' + result.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('网络错误：' + error, 'error');
+                });
+        }
+
+        // 处理搜索按键（回车搜索）
+        function handleSearchKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchArticles();
+            }
+        }
+
         // 获取文章列表（分页）
         function loadArticles() {
+            isSearchMode = false;
+
             fetch(`${API_URL}/page?pageNum=${currentPageNum}&pageSize=${pageSize}`)
                 .then(response => response.json())
                 .then(result => {
                     if (result.code === 200) {
                         displayArticles(result.data.list);
                         updatePagination(result.data);
+
+                        // 显示分页控件
+                        document.querySelector('.pagination').style.display = 'flex';
                     } else {
                         showMessage('加载失败：' + result.message, 'error');
                     }
